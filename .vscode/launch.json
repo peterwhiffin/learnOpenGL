@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug with cl",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "X:/Repos/builds/openGLTestProject/testgame.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "X:/repos/builds",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build with cl",
+            "symbolSearchPath": "C:\\Program Files (x86)\\Windows Kits\\10\\Debuggers\\x64\\sym"
+        }
+    ]
+}
