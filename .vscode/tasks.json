@@ -7,7 +7,7 @@
             "command": "cmd.exe",
             "args": [
                 "/C",
-                "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cl /EHsc /Zi /DEBUG msvcrt.lib glfw3.lib user32.lib gdi32.lib shell32.lib X:\\repos\\learnOpenGL\\src\\*.cpp X:\\repos\\learnOpenGL\\src\\*.c -IX:\\glfw-3.4\\include /link /libpath:X:\\glfw-3.4\\src /NODEFAULTLIB:libcmt"
+                "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cl /EHsc /Zi /DEBUG msvcrt.lib glfw3.lib user32.lib gdi32.lib shell32.lib X:\\repos\\learnOpenGL\\src\\testgame.cpp X:\\repos\\learnOpenGL\\src\\imageloader.cpp X:\\repos\\learnOpenGL\\src\\glad.c -IX:\\glfw-3.4\\include /link /libpath:X:\\glfw-3.4\\src /NODEFAULTLIB:libcmt"
             ],
             "options": {
                 "cwd": "X:/repos/builds/openGLTestProject/"
