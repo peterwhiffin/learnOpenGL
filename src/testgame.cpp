@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
 #include <iostream>
 #include "shader.hpp"
 #include "stb_image.h"
@@ -21,6 +22,7 @@ unsigned int lightVBO;
 unsigned int EBO;
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -31,8 +33,10 @@ float lastFrame = 0.0f;
 float lastX = 400, lastY = 300;
 float yaw = -90, pitch = 0;
 float fov = 67.0f;
+float cubeSpeed = 1.0f;
 glm::vec3 direction = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
+glm::vec3 cubePos = glm::vec3(0.0f, 0.0f, 0.0f);
 Camera cam(glm::vec3(0.0f, 0.0f, 10.0f));
 glm::mat4 model = glm::mat4(1.0f);
 glm::mat4 view = glm::mat4(1.0f);
@@ -161,12 +165,16 @@ int main()
         -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f};
 
     createVAO(vertices, sizeof(vertices), 0, 0, &cubeVAO, &VBO, &EBO);
-    createVAO(vertices, sizeof(vertices), 0, 0, &lightVAO, &lightVBO, &EBO);
+    createVAO(vertices, sizeof(vertices), 0, 0, &lightVAO, &VBO, &EBO);
     Shader litShader("X:/repos/learnOpenGL/src/shaders/defaultshader.vs", "X:/repos/learnOpenGL/src/shaders/defaultshader.fs");
     Shader lightSourceShader("X:/repos/learnOpenGL/src/shaders/defaultshader.vs", "X:/repos/learnOpenGL/src/shaders/lightsourceshader.fs");
     litShader.use();
     litShader.SetInt("mainTex", 0);
     litShader.SetInt("texture2", 1);
+    litShader.setVec3("material.ambient", glm::vec3(1.0f, 0.5f, 0.31f));
+    litShader.setVec3("material.diffuse", glm::vec3(1.0f, 0.5f, 0.31f));
+    litShader.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+    litShader.setFloat("material.shininess", 32.0f);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glEnable(GL_DEPTH_TEST);
@@ -190,18 +198,33 @@ int main()
 
         // be sure to activate shader when setting uniforms/drawing objects
         litShader.use();
+        // litShader.setVec3("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
+        // litShader.setVec3("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f));
+        litShader.setVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+        glm::vec3 lightColor;
+        lightColor.x = sin(glfwGetTime() * 2.0f);
+        lightColor.y = sin(glfwGetTime() * 0.7f);
+        lightColor.z = sin(glfwGetTime() * 1.3f);
+
+        glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
+        glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f);
+
+        litShader.setVec3("light.ambient", ambientColor);
+        litShader.setVec3("light.diffuse", diffuseColor);
+
         litShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
         litShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-        litShader.setVec3("lightPos", lightPos);
+        litShader.setVec3("LightPos", lightPos);
 
         // view/projection transformations
         model = glm::mat4(1.0f);
+        model = glm::translate(model, cubePos);
         // model = glm::scale(model, glm::vec3(1.0f, 2.2f, 1.0f));
         // model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
         view = cam.GetViewMatrix();
         projection = glm::perspective(glm::radians(cam.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
-        litShader.setMat4("normalMat", glm::transpose(glm::inverse(model)));
+        litShader.setVec3("viewPos", cam.Position);
+        litShader.setMat4("normalMat", glm::transpose(glm::inverse(model)) * view);
         litShader.setMat4("projection", projection);
         litShader.setMat4("view", view);
         // world transformation
@@ -282,6 +305,23 @@ void processInput(GLFWwindow *window)
         cam.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         cam.ProcessKeyboard(RIGHT, deltaTime);
+
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    {
+        cubePos.y += cubeSpeed * deltaTime;
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    {
+        cubePos.y -= cubeSpeed * deltaTime;
+    }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    {
+        cubePos.x += cubeSpeed * deltaTime;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    {
+        cubePos.x -= cubeSpeed * deltaTime;
+    }
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)

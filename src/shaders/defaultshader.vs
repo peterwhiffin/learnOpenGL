@@ -8,12 +8,14 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform mat4 normalMat;
+uniform vec3 LightPos;
 
 out vec3 bigColor;
 out vec3 vertPos;
 out vec2 texCoord;
 out vec3 normal;
 out vec3 fragPos;
+out vec3 lightPos;
 
 void main()
 { 
@@ -22,5 +24,6 @@ void main()
     texCoord = aTexCoord;
     normal = mat3(normalMat) * aNormal;
     //normal = aNormal;
-    fragPos = vec3(model * vec4(aPos, 1.0));
+    fragPos = vec3(view * model * vec4(aPos, 1.0));
+    lightPos = vec3(view * vec4(LightPos, 1.0));
 }  
