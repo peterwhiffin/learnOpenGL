@@ -84,7 +84,7 @@ public:
     {
         glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
     }
-    void SetInt(const std::string &name, int value) const
+    void setInt(const std::string &name, int value) const
     {
         glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
     }
