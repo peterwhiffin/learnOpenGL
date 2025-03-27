@@ -1,6 +1,9 @@
 #ifndef MODEL_H
 #define MODEL_H
+#include "assimp/material.h"
+#include "assimp/types.h"
 #define GLM_ENABLE_EXPERIMENTAL
+#include "camera.hpp"
 #include "glm/ext/quaternion_float.hpp"
 #include "mesh.hpp"
 #include "shader.hpp"
@@ -10,15 +13,13 @@
 #include <assimp/scene.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <iostream>
 #include <string>
 #include <vector>
-
-#include <iostream>
 unsigned int TextureFromFile(const char *path, const std::string &directory,
                              bool gamma = false);
 
-class Model
-{
+class Model {
 public:
   std::vector<Texture> textures_loaded;
   glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -26,15 +27,14 @@ public:
   glm::vec3 scale = glm::vec3(3.0f, 3.0f, 3.0f);
   Shader *shader;
 
-  Model(char *path, Shader *newShader, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f))
-  {
+  Model(char *path, Shader *newShader,
+        glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f)) {
     this->shader = newShader;
     this->position = position;
     loadModel(path);
   }
-  void Draw(Camera *cam, glm::vec3 *sunRot)
-  {
-    // shader->use();
+  void Draw(Camera *cam, glm::vec3 *sunRot) {
+    shader->use();
     shader->setMat4("projection", cam->GetProjection());
     shader->setMat4("view", cam->GetViewMatrix());
     shader->setVec3("viewPos", cam->Position);
@@ -49,8 +49,7 @@ public:
       meshes[i].Draw(shader);
   }
 
-  void rotate(float degrees, glm::vec3 axis)
-  {
+  void rotate(float degrees, glm::vec3 axis) {
     rotation *= glm::angleAxis(glm::radians(degrees), axis);
   }
 
@@ -59,15 +58,13 @@ private:
   std::vector<Mesh> meshes;
   std::string directory;
 
-  void loadModel(std::string path)
-  {
+  void loadModel(std::string path) {
     Assimp::Importer importer;
     const aiScene *scene =
         importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
-        !scene->mRootNode)
-    {
+        !scene->mRootNode) {
       std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
       return;
     }
@@ -76,29 +73,24 @@ private:
     processNode(scene->mRootNode, scene);
   }
 
-  void processNode(aiNode *node, const aiScene *scene)
-  {
+  void processNode(aiNode *node, const aiScene *scene) {
     // process all the node's meshes (if any)
-    for (unsigned int i = 0; i < node->mNumMeshes; i++)
-    {
+    for (unsigned int i = 0; i < node->mNumMeshes; i++) {
       aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
       meshes.push_back(processMesh(mesh, scene));
     }
     // then do the same for each of its children
-    for (unsigned int i = 0; i < node->mNumChildren; i++)
-    {
+    for (unsigned int i = 0; i < node->mNumChildren; i++) {
       processNode(node->mChildren[i], scene);
     }
   }
 
-  Mesh processMesh(aiMesh *mesh, const aiScene *scene)
-  {
+  Mesh processMesh(aiMesh *mesh, const aiScene *scene) {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
     std::vector<Texture> textures;
 
-    for (unsigned int i = 0; i < mesh->mNumVertices; i++)
-    {
+    for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
       Vertex vertex;
       // process vertex positions, normals and texture coordinates
       glm::vec3 vector;
@@ -125,48 +117,44 @@ private:
       vertices.push_back(vertex);
     }
     // process indices
-    for (unsigned int i = 0; i < mesh->mNumFaces; i++)
-    {
+    for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
       aiFace face = mesh->mFaces[i];
       for (unsigned int j = 0; j < face.mNumIndices; j++)
         indices.push_back(face.mIndices[j]);
     }
 
+    aiColor3D baseColor(1.0f, 1.0f, 1.0f);
     // process material
-    if (mesh->mMaterialIndex >= 0)
-    {
+    if (mesh->mMaterialIndex >= 0) {
       aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
       std::vector<Texture> diffuseMaps = loadMaterialTextures(
           material, aiTextureType_DIFFUSE, "texture_diffuse");
+
+      material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor);
       textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
       std::vector<Texture> specularMaps = loadMaterialTextures(
           material, aiTextureType_SPECULAR, "texture_specular");
       textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
     }
 
-    return Mesh(vertices, indices, textures);
+    return Mesh(vertices, indices, textures, baseColor);
   }
 
   std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type,
-                                            std::string typeName)
-  {
+                                            std::string typeName) {
     std::vector<Texture> textures;
-    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
-    {
+    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
       aiString str;
       mat->GetTexture(type, i, &str);
       bool skip = false;
-      for (unsigned int j = 0; j < textures_loaded.size(); j++)
-      {
-        if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)
-        {
+      for (unsigned int j = 0; j < textures_loaded.size(); j++) {
+        if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0) {
           textures.push_back(textures_loaded[j]);
           skip = true;
           break;
         }
       }
-      if (!skip)
-      { // if texture hasn't been loaded already, load it
+      if (!skip) { // if texture hasn't been loaded already, load it
         Texture texture;
         texture.id = TextureFromFile(str.C_Str(), directory);
         texture.type = typeName;
@@ -180,8 +168,7 @@ private:
 };
 
 unsigned int TextureFromFile(const char *path, const std::string &directory,
-                             bool gamma)
-{
+                             bool gamma) {
   std::string filename = std::string(path);
   filename = directory + '/' + filename;
 
@@ -191,8 +178,7 @@ unsigned int TextureFromFile(const char *path, const std::string &directory,
   int width, height, nrComponents;
   unsigned char *data =
       stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
-  if (data)
-  {
+  if (data) {
     GLenum format;
     if (nrComponents == 1)
       format = GL_RED;
@@ -213,9 +199,7 @@ unsigned int TextureFromFile(const char *path, const std::string &directory,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     stbi_image_free(data);
-  }
-  else
-  {
+  } else {
     std::cout << "Texture failed to load at path: " << path << std::endl;
     stbi_image_free(data);
   }

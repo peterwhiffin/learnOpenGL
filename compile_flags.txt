@@ -1,0 +1,6 @@
+-I
+X:\glfw-3.4\include
+-I
+X:\assimp\build\include
+-I
+X:\assimp\include

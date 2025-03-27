@@ -1,46 +1,45 @@
 
+#include "assimp/types.h"
+#include "glm/ext/vector_float3.hpp"
 #include "shader.hpp"
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
-struct Vertex
-{
+struct Vertex {
   glm::vec3 Position;
   glm::vec3 Normal;
   glm::vec2 TexCoords;
 };
 
-struct Texture
-{
+struct Texture {
   unsigned int id;
   std::string type;
   std::string path;
 };
 
-class Mesh
-{
+class Mesh {
 public:
   // mesh data
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
   std::vector<Texture> textures;
+  glm::vec3 baseColor;
 
   Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
-       std::vector<Texture> textures)
-  {
+       std::vector<Texture> textures, aiColor3D baseColor) {
     this->vertices = vertices;
     this->indices = indices;
     this->textures = textures;
-
+    this->baseColor.x = baseColor.r;
+    this->baseColor.y = baseColor.g;
+    this->baseColor.z = baseColor.b;
     setupMesh();
   }
 
-  void Draw(Shader *shader)
-  {
+  void Draw(Shader *shader) {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
-    for (unsigned int i = 0; i < textures.size(); i++)
-    {
+    for (unsigned int i = 0; i < textures.size(); i++) {
       glActiveTexture(GL_TEXTURE0 +
                       i); // activate proper texture unit before binding
       // retrieve texture number (the N in diffuse_textureN)
@@ -54,6 +53,8 @@ public:
       shader->setInt(("material." + name + number).c_str(), i);
       glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
+
+    shader->setVec3("baseColor", baseColor);
     glActiveTexture(GL_TEXTURE0);
     // draw mesh
     glBindVertexArray(VAO);
@@ -65,8 +66,7 @@ private:
   //  render data
   unsigned int VAO, VBO, EBO;
 
-  void setupMesh()
-  {
+  void setupMesh() {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);

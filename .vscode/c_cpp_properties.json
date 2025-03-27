@@ -4,7 +4,8 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "X:\\glfw-3.4\\include"
+                "X:\\glfw-3.4\\include",
+                "X:/assimp/include"
             ],
             "defines": [
                 "_DEBUG",
@@ -21,7 +22,8 @@
             "name": "glfw",
             "includePath": [
                 "x:/Repos/GLFW/TestProject/**",
-                "X:/glfw-3.4/include"
+                "X:/glfw-3.4/include",
+                "X:/assimp/include"
             ],
             "defines": [
                 "_DEBUG",
@@ -39,7 +41,8 @@
                 "path": [
                     "x:/Repos/GLFW/TestProject/**",
                     "X:/glfw-3.4/include",
-                    "x:/Repos/GLFW/TestProject"
+                    "x:/Repos/GLFW/TestProject",
+                    "X:/assimp/include"
                 ],
                 "limitSymbolsToIncludedHeaders": true
             },
