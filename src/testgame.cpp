@@ -1,4 +1,5 @@
 #include "camera.hpp"
+#include "glm/ext/matrix_float4x4.hpp"
 #include "input.hpp"
 #include "model.hpp"
 #include "shader.hpp"
@@ -77,6 +78,9 @@ int main() {
   //                  "X:/repos/learnOpenGL/src/shaders/debugshader.fs");
   Shader depthShader("X:/repos/learnOpenGL/src/shaders/depthshader.vs",
                      "X:/repos/learnOpenGL/src/shaders/depthshader.fs");
+  Shader singleColorShader(
+      "X:/repos/learnOpenGL/src/shaders/depthshader.vs",
+      "X:/repos/learnOpenGL/src/shaders/singlecolorshader.fs");
   // CreateModel("X:/Repos/learnOpenGL/src/Resources/M4/ddm4 v7.obj",
   //            &depthShader);
   // CreateModel("X:/Repos/learnOpenGL/src/Resources/backpack/backpack.obj",
@@ -100,10 +104,15 @@ int main() {
   // litShader.setVec3("dirLight.direction", sunRot);
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  // glEnable(GL_DEPTH_TEST);
+  // glDepthFunc(GL_LESS);
+  // glEnable(GL_BLEND);
+  // glEnable(GL_STENCIL_TEST);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
-  glEnable(GL_BLEND);
-
+  glEnable(GL_STENCIL_TEST);
+  glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   unsigned int pavementTex =
       loadTexture("X:/Repos/learnOpenGL/src/Resources/pavement/"
@@ -184,19 +193,39 @@ int main() {
     lastFrame = currentFrame;
     input.processInput();
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     //    DrawScene();
-    depthShader.use();
-    depthShader.setInt("texture1", 0);
+    singleColorShader.use();
+
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = cam.GetViewMatrix();
     glm::mat4 projection = cam.GetProjection();
+    singleColorShader.setMat4("view", view);
+    singleColorShader.setMat4("projection", projection);
+    depthShader.use();
+
+    glStencilMask(0x00);
+    glBindVertexArray(planeVAO);
+    glBindTexture(GL_TEXTURE_2D, pavementTex);
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, 4.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(16.0f));
+    depthShader.setMat4("model", model);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilMask(0xFF);
+    //    depthShader.setInt("texture1", 0);
+    view = cam.GetViewMatrix();
+    projection = cam.GetProjection();
     depthShader.setMat4("view", view);
     depthShader.setMat4("projection", projection);
     // cubes
     glBindVertexArray(cubeVAO);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, metalTex);
+    model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(-8.0f, 0.0f, -8.0f));
     model = glm::scale(model, glm::vec3(8.0f));
     depthShader.setMat4("model", model);
@@ -206,15 +235,28 @@ int main() {
     model = glm::scale(model, glm::vec3(8.0f));
     depthShader.setMat4("model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
-    // floor
-    glBindVertexArray(planeVAO);
-    glBindTexture(GL_TEXTURE_2D, pavementTex);
+
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilMask(0x00);
+    glDisable(GL_DEPTH_TEST);
+    singleColorShader.use();
+    glBindVertexArray(cubeVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, metalTex);
     model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 4.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(16.0f));
+    model = glm::translate(model, glm::vec3(-8.0f, 0.0f, -8.0f));
+    model = glm::scale(model, glm::vec3(9.0f));
     depthShader.setMat4("model", model);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindVertexArray(0);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(16.0f, 0.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(9.0f));
+    depthShader.setMat4("model", model);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glStencilMask(0xFF);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glEnable(GL_DEPTH_TEST);
+    // floor
     cam.Update(deltaTime);
 
     glfwPollEvents();
