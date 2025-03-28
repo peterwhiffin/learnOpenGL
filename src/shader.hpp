@@ -12,10 +12,10 @@
 #include <string>
 
 class Shader {
-public:
+ public:
   unsigned int ID;
 
-  Shader(const char *vertexPath, const char *fragmentPath) {
+  Shader(const char* vertexPath, const char* fragmentPath) {
     std::string vertexCode;
     std::string fragmentCode;
 
@@ -44,8 +44,8 @@ public:
       std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
     }
 
-    const char *vShaderCode = vertexCode.c_str();
-    const char *fShaderCode = fragmentCode.c_str();
+    const char* vShaderCode = vertexCode.c_str();
+    const char* fShaderCode = fragmentCode.c_str();
 
     vertex = glCreateShader(GL_VERTEX_SHADER);
     fragment = glCreateShader(GL_FRAGMENT_SHADER);
@@ -72,30 +72,34 @@ public:
   }
 
   void use() const { glUseProgram(ID); }
-  void SetBool(const std::string &name, bool value) const {
+  void SetBool(const std::string& name, bool value) const {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
   }
-  void setInt(const std::string &name, int value) const {
+  void setInt(const std::string& name, int value) const {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
   }
-  void setFloat(const std::string &name, float value) const {
+  void setFloat(const std::string& name, float value) const {
     glUniform1f(glGetUniformLocation(ID, name.c_str()), (float)value);
   }
-  void setVec3(const std::string &name, glm::vec3 value) const {
+  void setVec3(const std::string& name, glm::vec3 value) const {
     glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1,
                  glm::value_ptr(value));
   }
-  void setMat4(const std::string &name, glm::mat4 value) const {
+  void setVec2(const std::string& name, glm::vec2 value) const {
+    glUniform2fv(glGetUniformLocation(ID, name.c_str()), 1,
+                 glm::value_ptr(value));
+  }
+  void setMat4(const std::string& name, glm::mat4 value) const {
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE,
                        glm::value_ptr(value));
   }
-  bool operator<(const Shader &other) const {
+  bool operator<(const Shader& other) const {
     // Comparison logic, for example comparing shader ID or other relevant
     // properties
-    return ID < other.ID; // Example, assuming `id` is a member of Shader
+    return ID < other.ID;  // Example, assuming `id` is a member of Shader
   }
 
-private:
+ private:
   void checkCompileErrors(unsigned int shader, std::string type) {
     int success;
     char infoLog[1024];
