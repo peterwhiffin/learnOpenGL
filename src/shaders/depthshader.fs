@@ -1,5 +1,7 @@
 #version 330 core
 in vec4 fragPos;
+in vec2 texCoords;
+uniform sampler2D texture1;
 out vec4 FragColor;
 float near = 0.1; 
 float far  = 100.0; 
@@ -14,4 +16,5 @@ void main()
 {             
     float depth = LinearizeDepth(gl_FragCoord.z) / far; // divide by far for demonstration
     FragColor = vec4(vec3(depth), 1.0);
+    FragColor = texture(texture1, texCoords);
 }

@@ -13,16 +13,15 @@ uniform mat4 normalMat;
 uniform float time = 0.0;
 
 out vec3 bigColor;
-out vec2 texCoord;
+out vec2 texCoords;
 out vec3 normal;
 out vec3 fragPos;
-out vec3 originalFragPos;
 out vec3 lightPos;
-out vec3 fsun;
-
-  const vec2 data[4] = vec2[](
-    vec2(-1.0,  1.0), vec2(-1.0, -1.0),
-    vec2( 1.0,  1.0), vec2( 1.0, -1.0));
+const vec2 data[4] = vec2[](
+vec2(-1.0,  1.0), 
+vec2(-1.0, -1.0),
+vec2( 1.0,  1.0), 
+vec2( 1.0, -1.0));
 
 // out vec3 pos;
 //   out vec3 fsun;
@@ -43,10 +42,8 @@ out vec3 fsun;
 
 void main()
 {    
-    originalFragPos = aPos;
     fragPos = vec3(model * vec4(aPos, 1.0));
     normal = mat3(normalMat) * aNormal;  
-    texCoord = aTexCoord;   
-    fsun = vec3(0.0, sin(time * 0.01), cos(time * 0.01));
+    texCoords = aTexCoord;   
     gl_Position = projection * view * vec4(fragPos, 1.0);
 }  

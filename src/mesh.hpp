@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
+
 struct Vertex {
   glm::vec3 Position;
   glm::vec3 Normal;
@@ -33,16 +34,27 @@ public:
     this->baseColor.x = baseColor.r;
     this->baseColor.y = baseColor.g;
     this->baseColor.z = baseColor.b;
+
+    if (textures.size() == 0) {
+      Texture defaultTex;
+      defaultTex.id = 1;
+      defaultTex.type = "texture_diffuse";
+      this->textures.push_back(defaultTex);
+      Texture defaultSpec;
+      defaultSpec.id = 1;
+      defaultSpec.type = "texture_specular";
+      this->textures.push_back(defaultSpec);
+    }
     setupMesh();
   }
 
-  void Draw(Shader *shader) {
+  void Draw(const Shader *shader) {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
     for (unsigned int i = 0; i < textures.size(); i++) {
       glActiveTexture(GL_TEXTURE0 +
                       i); // activate proper texture unit before binding
-      // retrieve texture number (the N in diffuse_textureN)
+                          // retrieve texture number (the N in diffuse_textureN)
       std::string number;
       std::string name = textures[i].type;
       if (name == "texture_diffuse")

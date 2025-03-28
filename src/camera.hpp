@@ -27,10 +27,13 @@ public:
   float MouseSensitivity;
   float fov;
   float aspectRatio;
+  float nearPlane;
+  float farPlane;
 
   InputHandler *input;
   // constructor with vectors
-  Camera(InputHandler *inputHandler, float aspectRatio,
+  Camera(InputHandler *inputHandler, float aspectRatio, float nearPlane = 0.1,
+         float farPlane = 1000,
          glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), float yaw = YAW,
          float pitch = PITCH)
       : MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY) {
@@ -39,6 +42,8 @@ public:
     Pitch = pitch;
     input = inputHandler;
     this->aspectRatio = aspectRatio;
+    this->nearPlane = nearPlane;
+    this->farPlane = farPlane;
     fov = 67.0f;
   }
 
@@ -47,7 +52,8 @@ public:
   }
 
   glm::mat4 GetProjection() {
-    return glm::perspective(glm::radians(fov), aspectRatio, 0.1f, 1000.0f);
+    return glm::perspective(glm::radians(fov), aspectRatio, nearPlane,
+                            farPlane);
   }
 
   glm::vec3 right() {

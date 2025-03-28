@@ -25,19 +25,12 @@ public:
   glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
   glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
   glm::vec3 scale = glm::vec3(3.0f, 3.0f, 3.0f);
-  Shader *shader;
 
-  Model(char *path, Shader *newShader,
-        glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f)) {
-    this->shader = newShader;
+  Model(char *path, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f)) {
     this->position = position;
     loadModel(path);
   }
-  void Draw(Camera *cam, glm::vec3 *sunRot) {
-    shader->use();
-    shader->setMat4("projection", cam->GetProjection());
-    shader->setMat4("view", cam->GetViewMatrix());
-    shader->setVec3("viewPos", cam->Position);
+  void Draw(const Shader *shader) {
     // shader->setVec3("dirLight.direction", *sunRot);
     glm::mat4 trans = glm::translate(glm::mat4(1.0f), position);
     trans *= glm::mat4_cast(rotation);
