@@ -57,6 +57,7 @@ int main() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  //glfwWindowHint(GLFW_SAMPLES, 16);
 
   GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "Pete's graphics", NULL, NULL);
 
@@ -279,16 +280,16 @@ int main() {
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
   glGenTextures(1, &fullscreenTexture);
-  glBindTexture(GL_TEXTURE_2D, fullscreenTexture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fullscreenTexture, 0);
-  glBindTexture(GL_TEXTURE_2D, 0);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, fullscreenTexture);
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, 800, 600, GL_TRUE);
+  glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, fullscreenTexture, 0);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
   glGenRenderbuffers(1, &rbo);
   glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+  glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, 800, 600);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
@@ -296,6 +297,21 @@ int main() {
     std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
   }
 
+  unsigned int intermediateFBO;
+  glGenFramebuffers(1, &intermediateFBO);
+  glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
+  // create a color attachment texture
+  unsigned int screenTexture;
+  glGenTextures(1, &screenTexture);
+  glBindTexture(GL_TEXTURE_2D, screenTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screenWidth, screenHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);  // we only need a color buffer
+
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    std::cout << "ERROR::FRAMEBUFFER:: Intermediate framebuffer is not complete!" << std::endl;
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
   std::vector<std::string> faces{
       "X:/Repos/learnOpenGL/src/Resources/skybox/px.png",
       "X:/Repos/learnOpenGL/src/Resources/skybox/nx.png",
@@ -316,6 +332,7 @@ int main() {
   //glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_CULL_FACE);
+  glEnable(GL_MULTISAMPLE);
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   while (!glfwWindowShouldClose(window)) {
     float currentFrame = static_cast<float>(glfwGetTime());
@@ -323,13 +340,16 @@ int main() {
     lastFrame = currentFrame;
 
     input.processInput();
-
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
     DrawScene();
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
+    glBlitFramebuffer(0, 0, screenWidth, screenHeight, 0, 0, screenWidth, screenHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDisable(GL_DEPTH_TEST);
@@ -341,7 +361,7 @@ int main() {
     glBindVertexArray(quadVAO);
     glActiveTexture(GL_TEXTURE0);
 
-    glBindTexture(GL_TEXTURE_2D, fullscreenTexture);
+    glBindTexture(GL_TEXTURE_2D, screenTexture);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     mainCamera->Update(deltaTime);
