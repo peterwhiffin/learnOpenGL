@@ -7,10 +7,15 @@ layout (location = 3) in vec3 aOffset;
 
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+//uniform mat4 view;
+//uniform mat4 projection;
 uniform mat4 normalMat;
 uniform float time = 0.0;
+
+layout (std140) uniform Matrices{
+        mat4 projection;
+        mat4 view;
+    };
 
 out vec3 bigColor;
 out vec2 texCoords;

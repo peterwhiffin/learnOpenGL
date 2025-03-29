@@ -5,10 +5,14 @@ layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoord;
 layout (location = 3) in vec3 aOffset;
 
+layout (std140) uniform Matrices{
+        mat4 projection;
+        mat4 view;
+    };
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+//uniform mat4 view;
+//uniform mat4 projection;
 uniform mat4 normalMat;
 uniform float time = 0.0;
 
