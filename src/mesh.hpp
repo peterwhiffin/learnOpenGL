@@ -34,17 +34,17 @@ class Mesh {
     this->baseColor.y = baseColor.g;
     this->baseColor.z = baseColor.b;
 
-    if (textures.size() == 0) {
-      Texture defaultTex;
-      defaultTex.id = 1;
-      defaultTex.type = "texture_diffuse";
-      this->textures.push_back(defaultTex);
-      Texture defaultSpec;
-      defaultSpec.id = 1;
-      defaultSpec.type = "texture_specular";
-      this->textures.push_back(defaultSpec);
-    }
-
+    // if (textures.size() == 0) {
+    //   Texture defaultTex;
+    //   defaultTex.id = 1;
+    //   defaultTex.type = "texture_diffuse";
+    //   this->textures.push_back(defaultTex);
+    //   Texture defaultSpec;
+    //   defaultSpec.id = 1;
+    //   defaultSpec.type = "texture_specular";
+    //   this->textures.push_back(defaultSpec);
+    // }
+    //
     setupMesh();
   }
 
@@ -67,7 +67,7 @@ class Mesh {
       glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
 
-    shader->setVec3("baseColor", baseColor);
+    //shader->setVec3("baseColor", baseColor);
     glActiveTexture(GL_TEXTURE0);
     // draw mesh
     glBindVertexArray(VAO);
