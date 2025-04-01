@@ -10,8 +10,16 @@ const float offset = 1.0 / 300.0;
 
 void main(){
 
+FragColor = texture(screenTexture, TexCoords);
+return;
+
+
+float gamma = 2.2;
 //FragColor = vec4(vec3(1.0 - texture(screenTexture, TexCoords)), 1.0);
 FragColor = texture(screenTexture, TexCoords);
+FragColor.rgb = pow(FragColor.rgb, vec3(1.0/gamma));
+//float depthValue = texture(screenTexture, TexCoords).r;
+//FragColor = vec4(vec3(depthValue), 1.0);
 return;
 vec2 offsets[9] = vec2[](
         vec2(-offset,  offset), // top-left

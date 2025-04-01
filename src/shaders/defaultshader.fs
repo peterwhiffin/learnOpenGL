@@ -7,6 +7,7 @@ out vec4 FragColor;
 struct Material {
     sampler2D diffuse;
     sampler2D specular;
+    sampler2D shadowMap;
     float shininess;
 };
 
@@ -54,6 +55,7 @@ in vec3 normal;
 in vec3 fragPos;
 in vec2 texCoord;
 in vec3 originalFragPos;
+in vec4 FragPosLightSpace;
 
 uniform vec3 viewPos;
 uniform Material material;
@@ -64,6 +66,21 @@ uniform vec3 baseColor;
 
 vec4 diffuseTexColor;
 vec4 specularTexColor;
+
+float ShadowCalculation(vec4 fragPosLightSpace){
+      // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(material.shadowMap, projCoords.xy).r; 
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    // check whether current frag pos is in shadow
+    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+
+    return shadow;
+    }
 
 void main()
 {  
@@ -91,9 +108,9 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color){
     vec3 lightDir = normalize(-light.direction);
 
     float diff = max(dot(normal, lightDir), 0.0);
-
+    vec3 halfwayDir = normalize(lightDir + viewDir);
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
     vec3 ambient = light.ambient * vec3(diffuseTexColor);
     vec3 diffuse = light.diffuse * diff * vec3(diffuseTexColor);
@@ -102,7 +119,8 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color){
  //   vec3 diffuse = light.diffuse * diff * color;
 //    vec3 specular = light.specular * spec * color;
 
-    return (ambient + diffuse + specular);
+   float shadow = ShadowCalculation(FragPosLightSpace); 
+    return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)

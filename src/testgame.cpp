@@ -25,6 +25,9 @@ void processInput(GLFWwindow* window, Camera* cam);
 void mouse_callback(GLFWwindow* window);
 unsigned int loadTexture(char const* path);
 unsigned int loadCubemap(std::vector<std::string> faces);
+void DrawShadowScene(Shader* shader);
+
+const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
 Camera* mainCamera;
 Shader* skyboxShader;
@@ -33,6 +36,7 @@ glm::mat4 view = glm::mat4(1.0f);
 glm::mat4 projection = glm::mat4(1.0f);
 glm::vec3 viewPos = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 sunRot = glm::vec3(44.0f, 0.0f, 45.0f);
+glm::vec3 lightPos = glm::vec3(-100.0f, 100.0f, -100.0f);
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
@@ -51,6 +55,7 @@ unsigned int cubemapTexture;
 unsigned int uniformBlockIndexDepth;
 unsigned int uniformBlockIndexLit;
 unsigned int uboMatrices;
+unsigned int depthMapFBO;
 
 int main() {
   glfwInit();
@@ -89,6 +94,7 @@ int main() {
   Shader screenShader("X:/Repos/learnOpenGL/src/shaders/screenshader.vs", "X:/Repos/learnOpenGL/src/shaders/screenshader.fs");
   Shader skyboxShaderObj("X:/Repos/learnOpenGL/src/shaders/skyboxshader.vs", "X:/Repos/learnOpenGL/src/shaders/skyboxshader.fs");
   Shader litShader("X:/Repos/learnOpenGL/src/shaders/defaultshader.vs", "X:/Repos/learnOpenGL/src/shaders/defaultshader.fs");
+  Shader simpleDepthShader("X:/Repos/learnOpenGL/src/shaders/simpledepthshader.vs", "X:/Repos/learnOpenGL/src/shaders/simpledepthshader.fs");
 
   skyboxShader = &skyboxShaderObj;
   skyboxShaderObj.use();
@@ -101,6 +107,7 @@ int main() {
   depthShader.setInt("texture1", 0);
 
   litShader.use();
+  litShader.setInt("material.depthMap", 2);
   litShader.setVec3("dirLight.ambient", glm::vec3(0.17f));
   litShader.setVec3("dirLight.diffuse", glm::vec3(0.87f));
   litShader.setVec3("dirLight.specular", glm::vec3(0.77f));
@@ -167,57 +174,6 @@ int main() {
                           1.0f, -1.0f, 1.0f, 0.0f,
                           1.0f, 1.0f, 1.0f, 1.0f};
 
-  float cubeVertices[] = {
-      // Back face
-      -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,  // Bottom-left
-      0.5f, 0.5f, -0.5f, 1.0f, 1.0f,    // top-right
-      0.5f, -0.5f, -0.5f, 1.0f, 0.0f,   // bottom-right
-      0.5f, 0.5f, -0.5f, 1.0f, 1.0f,    // top-right
-      -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,  // bottom-left
-      -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,   // top-left
-      // Front face
-      -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,  // bottom-left
-      0.5f, -0.5f, 0.5f, 1.0f, 0.0f,   // bottom-right
-      0.5f, 0.5f, 0.5f, 1.0f, 1.0f,    // top-right
-      0.5f, 0.5f, 0.5f, 1.0f, 1.0f,    // top-right
-      -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,   // top-left
-      -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,  // bottom-left
-      // Left face
-      -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,    // top-right
-      -0.5f, 0.5f, -0.5f, 1.0f, 1.0f,   // top-left
-      -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,  // bottom-left
-      -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,  // bottom-left
-      -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,   // bottom-right
-      -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,    // top-right
-                                        // Right face
-      0.5f, 0.5f, 0.5f, 1.0f, 0.0f,     // top-left
-      0.5f, -0.5f, -0.5f, 0.0f, 1.0f,   // bottom-right
-      0.5f, 0.5f, -0.5f, 1.0f, 1.0f,    // top-right
-      0.5f, -0.5f, -0.5f, 0.0f, 1.0f,   // bottom-right
-      0.5f, 0.5f, 0.5f, 1.0f, 0.0f,     // top-left
-      0.5f, -0.5f, 0.5f, 0.0f, 0.0f,    // bottom-left
-      // Bottom face
-      -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,  // top-right
-      0.5f, -0.5f, -0.5f, 1.0f, 1.0f,   // top-left
-      0.5f, -0.5f, 0.5f, 1.0f, 0.0f,    // bottom-left
-      0.5f, -0.5f, 0.5f, 1.0f, 0.0f,    // bottom-left
-      -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,   // bottom-right
-      -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,  // top-right
-      // Top face
-      -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,  // top-left
-      0.5f, 0.5f, 0.5f, 1.0f, 0.0f,    // bottom-right
-      0.5f, 0.5f, -0.5f, 1.0f, 1.0f,   // top-right
-      0.5f, 0.5f, 0.5f, 1.0f, 0.0f,    // bottom-right
-      -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,  // top-left
-      -0.5f, 0.5f, 0.5f, 0.0f, 0.0f    // bottom-left
-  };
-  float planeVertices[] = {
-      5.0f, -0.5f, 5.0f, 2.0f, 0.0f, -5.0f, -0.5f, 5.0f,
-      0.0f, 0.0f, -5.0f, -0.5f, -5.0f, 0.0f, 2.0f,
-
-      5.0f, -0.5f, 5.0f, 2.0f, 0.0f, -5.0f, -0.5f, -5.0f,
-      0.0f, 2.0f, 5.0f, -0.5f, -5.0f, 2.0f, 2.0f};
-
   uniformBlockIndexDepth = glad_glGetUniformBlockIndex(depthShader.ID, "Matrices");
   uniformBlockIndexLit = glad_glGetUniformBlockIndex(litShader.ID, "Matrices");
 
@@ -249,30 +205,6 @@ int main() {
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-  glBindVertexArray(0);
-
-  unsigned int cubeVAO, cubeVBO;
-  glGenVertexArrays(1, &cubeVAO);
-  glGenBuffers(1, &cubeVBO);
-  glBindVertexArray(cubeVAO);
-  glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-  glBindVertexArray(0);
-
-  unsigned int planeVAO, planeVBO;
-  glGenVertexArrays(1, &planeVAO);
-  glGenBuffers(1, &planeVBO);
-  glBindVertexArray(planeVAO);
-  glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
   glBindVertexArray(0);
 
   unsigned int fbo;
@@ -323,6 +255,22 @@ int main() {
 
   cubemapTexture = loadCubemap(faces);
 
+  unsigned int depthMap;
+  glGenFramebuffers(1, &depthMapFBO);
+  glGenTextures(1, &depthMap);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glEnable(GL_DEPTH_TEST);
@@ -331,7 +279,7 @@ int main() {
   glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
   //glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glEnable(GL_CULL_FACE);
+  // glEnable(GL_CULL_FACE);
   glEnable(GL_MULTISAMPLE);
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   while (!glfwWindowShouldClose(window)) {
@@ -340,11 +288,25 @@ int main() {
     lastFrame = currentFrame;
 
     input.processInput();
+    if (input.jump) {
+      lightPos = mainCamera->Position;
+      sunRot = mainCamera->forward();
+    }
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    //config light shader/Matrices
+    //DrawSceneFROMLIGHTSTUFF();
+    DrawShadowScene(&simpleDepthShader);
+
+    glViewport(0, 0, screenWidth, screenHeight);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glActiveTexture(GL_TEXTURE0);
     DrawScene();
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
@@ -361,7 +323,7 @@ int main() {
     glBindVertexArray(quadVAO);
     glActiveTexture(GL_TEXTURE0);
 
-    glBindTexture(GL_TEXTURE_2D, screenTexture);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     mainCamera->Update(deltaTime);
@@ -374,10 +336,46 @@ int main() {
   return 0;
 }
 
+void DrawShadowScene(Shader* shader) {
+  float near_plane = 1.0f, far_plane = 1000.5f;
+  glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+  glm::mat4 lightView = glm::lookAt(lightPos, lightPos + sunRot, glm::vec3(0.0, 1.0, 0.0));
+  glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+  for (const auto& pair : shaderGroups) {
+    shader->use();
+    shader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+    //shader->setMat4("view", view);
+    //pair.first.setVec3("viewPos", viewPos);
+
+    for (Model* m : pair.second) {
+      m->Draw(shader);
+    }
+  }
+
+  // glDepthFunc(GL_LEQUAL);
+  // skyboxShader->use();
+  //
+  // view = glm::mat4(glm::mat3(view));
+  //
+  // skyboxShader->setMat4("view", view);
+  // skyboxShader->setMat4("projection", projection);
+  //
+  // glBindVertexArray(skyboxVAO);
+  // glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+  // glDrawArrays(GL_TRIANGLES, 0, 36);
+  // glDepthFunc(GL_LESS);
+}
+
 void DrawScene() {
   view = mainCamera->GetViewMatrix();
   projection = mainCamera->GetProjection();
   viewPos = mainCamera->Position;
+
+  float near_plane = 1.0f, far_plane = 1000.5f;
+  glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+  glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+  glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
   glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
   glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
@@ -389,7 +387,7 @@ void DrawScene() {
     // pair.first.setMat4("projection", projection);
     // pair.first.setMat4("view", view);
     pair.first.setVec3("viewPos", viewPos);
-
+    pair.first.setMat4("lightSpaceMatrix", lightSpaceMatrix);
     for (Model* m : pair.second) {
       m->Draw(&pair.first);
     }

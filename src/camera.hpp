@@ -55,8 +55,8 @@ class Camera {
   }
 
   glm::mat4 GetProjection() {
-    return glm::perspective(glm::radians(fov), aspectRatio, nearPlane,
-                            farPlane);
+    return glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
+    // return glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
   }
 
   glm::vec3 right() {

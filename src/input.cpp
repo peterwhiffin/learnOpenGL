@@ -35,6 +35,12 @@ void InputHandler::handleKeys() {
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
     moveInput.x -= 1.0f;
   }
+
+  if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+    jump = true;
+  } else {
+    jump = false;
+  }
 }
 void InputHandler::handleMouse() {
   double xpos = 0;
