@@ -18,6 +18,7 @@ public:
   glm::vec2 moveInput;
   double mouseX, mouseY;
   float oldMouseX, oldMouseY;
+  bool jump;
 
   InputHandler(GLFWwindow *window);
 
