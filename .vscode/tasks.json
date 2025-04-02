@@ -7,42 +7,18 @@
             "command": "cmd.exe",
             "args": [
                 "/C",
-                "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cl /EHsc /Zi /DEBUG msvcrt.lib glfw3.lib user32.lib gdi32.lib shell32.lib X:\\repos\\learnOpenGL\\src\\testgame.cpp X:\\repos\\learnOpenGL\\src\\input.cpp X:\\repos\\learnOpenGL\\src\\imageloader.cpp X:\\repos\\learnOpenGL\\src\\glad.c -IX:\\glfw-3.4\\include -IX:\\assimp\\include /link /libpath:X:\\glfw-3.4\\src /libpath:X:\\assimp\\build\\lib assimp-vc143-mt.lib /NODEFAULTLIB:libcmt"
-            ],
-            "options": {
-                "cwd": "X:/repos/builds/openGLTestProject/"
-            },
-            "problemMatcher": [
-                "$msCompile"
+                "pushd \"${workspaceFolder}/build\" && \"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat\" x64 && cl /Felearnopengl /EHsc /Zi /DEBUG msvcrt.lib glfw3.lib user32.lib gdi32.lib shell32.lib ../src/*.cpp ../src/*.c -I../include /link /libpath:../lib assimp-vc143-mt.lib /NODEFAULTLIB:libcmt && popd"
             ],
             "group": {
                 "kind": "build",
                 "isDefault": true
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
             }
         }
     ]
 }
-// {
-//     "version": "2.0.0",
-//     "tasks": [
-//         {
-//             "label": "Build with cl",
-//             "type": "shell",
-//             "command": "cmd.exe",
-//             "args": [
-//                 "/C",
-//                 "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cl /EHsc /O2 /Ob2 /Ot /GL msvcrt.lib glfw3.lib user32.lib gdi32.lib shell32.lib X:\\repos\\learnOpenGL\\src\\testgame.cpp X:\\repos\\learnOpenGL\\src\\input.cpp X:\\repos\\learnOpenGL\\src\\imageloader.cpp X:\\repos\\learnOpenGL\\src\\glad.c -IX:\\glfw-3.4\\include -IX:\\assimp\\include /link /LTCG /libpath:X:\\glfw-3.4\\src /libpath:X:\\assimp\\build\\lib assimp-vc143-mt.lib /NODEFAULTLIB:libcmt"
-//             ],
-//             "options": {
-//                 "cwd": "X:/repos/builds/openGLTestProject/"
-//             },
-//             "problemMatcher": [
-//                 "$msCompile"
-//             ],
-//             "group": {
-//                 "kind": "build",
-//                 "isDefault": true
-//             }
-//         }
-//     ]
-// }

@@ -3,4 +3,7 @@
 
 
 ### Extra ###
-/src/Resources/
+/Resources
+/include
+/lib
+/build

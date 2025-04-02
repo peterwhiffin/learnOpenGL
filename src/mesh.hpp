@@ -6,27 +6,31 @@
 #include "glm/ext/vector_float3.hpp"
 #include "shader.hpp"
 
-struct Vertex {
+struct Vertex
+{
   glm::vec3 Position;
   glm::vec3 Normal;
   glm::vec2 TexCoords;
 };
 
-struct Texture {
+struct Texture
+{
   unsigned int id;
   std::string type;
   std::string path;
 };
 
-class Mesh {
- public:
+class Mesh
+{
+public:
   // mesh data
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
   std::vector<Texture> textures;
   glm::vec3 baseColor;
 
-  Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, aiColor3D baseColor) {
+  Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, aiColor3D baseColor)
+  {
     this->vertices = vertices;
     this->indices = indices;
     this->textures = textures;
@@ -48,26 +52,38 @@ class Mesh {
     setupMesh();
   }
 
-  void Draw(const Shader* shader) {
+  void Draw(const Shader *shader)
+  {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
+    bool hasSpecular = false;
 
-    for (unsigned int i = 0; i < textures.size(); i++) {
-      glActiveTexture(GL_TEXTURE0 + i);  // activate proper texture unit before binding
-                                         // retrieve texture number (the N in diffuse_textureN)
+    for (unsigned int i = 0; i < textures.size(); i++)
+    {
+      glActiveTexture(GL_TEXTURE0 + i); // activate proper texture unit before binding
+                                        // retrieve texture number (the N in diffuse_textureN)
       std::string number;
       std::string name = textures[i].type;
 
       if (name == "texture_diffuse")
         number = std::to_string(diffuseNr++);
       else if (name == "texture_specular")
+      {
         number = std::to_string(specularNr++);
+        hasSpecular = true;
+      }
 
       shader->setInt(("material." + name + number).c_str(), i);
       glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
 
-    //shader->setVec3("baseColor", baseColor);
+    if (!hasSpecular)
+    {
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, 1);
+    }
+
+    // shader->setVec3("baseColor", baseColor);
     glActiveTexture(GL_TEXTURE0);
     // draw mesh
     glBindVertexArray(VAO);
@@ -75,11 +91,12 @@ class Mesh {
     glBindVertexArray(0);
   }
 
- private:
+private:
   //  render data
   unsigned int VAO, VBO, EBO;
 
-  void setupMesh() {
+  void setupMesh()
+  {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -94,13 +111,13 @@ class Mesh {
 
     // vertex positions
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)0);
     // vertex normals
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, Normal));
     // vertex texture coords
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, TexCoords));
 
     glBindVertexArray(0);
   }

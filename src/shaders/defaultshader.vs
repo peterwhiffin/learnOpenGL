@@ -1,4 +1,4 @@
-#version 330 core
+#version 460 core
 
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
@@ -24,7 +24,6 @@ out vec3 fragPos;
 out vec3 originalFragPos;
 out vec3 lightPos;
 out vec4 FragPosLightSpace;
-
 
 void main()
 {    
