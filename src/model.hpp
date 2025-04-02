@@ -143,8 +143,7 @@ private:
     return Mesh(vertices, indices, textures, baseColor);
   }
 
-  std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type,
-                                            std::string typeName)
+  std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName)
   {
     std::vector<Texture> textures;
     for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -191,13 +190,26 @@ unsigned int TextureFromFile(const char *path, const std::string &directory, boo
 
   if (data)
   {
+    std::string formatName;
+
     GLenum format;
     if (nrComponents == 1)
+    {
       format = GL_RED;
+      formatName = "GL_RED";
+    }
     else if (nrComponents == 3)
+    {
       format = GL_RGB;
+      formatName = "GL_RGB";
+    }
     else if (nrComponents == 4)
+    {
       format = GL_RGBA;
+      formatName = "GL_RGBA";
+    }
+
+    // std::cout << "texture: " << filename << formatName << std::endl;
 
     glBindTexture(GL_TEXTURE_2D, textureID);
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);

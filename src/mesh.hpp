@@ -56,6 +56,7 @@ public:
   {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
+    bool hasSpecular = false;
 
     for (unsigned int i = 0; i < textures.size(); i++)
     {
@@ -67,10 +68,19 @@ public:
       if (name == "texture_diffuse")
         number = std::to_string(diffuseNr++);
       else if (name == "texture_specular")
+      {
         number = std::to_string(specularNr++);
+        hasSpecular = true;
+      }
 
       shader->setInt(("material." + name + number).c_str(), i);
       glBindTexture(GL_TEXTURE_2D, textures[i].id);
+    }
+
+    if (!hasSpecular)
+    {
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, 1);
     }
 
     // shader->setVec3("baseColor", baseColor);
