@@ -30,11 +30,12 @@ unsigned int loadCubemap(std::vector<std::string> faces);
 
 Camera *mainCamera;
 Shader *skyboxShader;
+InputHandler *playerInput;
 std::map<Shader, std::vector<Model *>> shaderGroups;
 glm::mat4 view = glm::mat4(1.0f);
 glm::mat4 projection = glm::mat4(1.0f);
 glm::vec3 viewPos = glm::vec3(0.0f, 0.0f, 0.0f);
-glm::vec3 sunPos = glm::vec3(-5.0f, 20.0f, -2.0f);
+glm::vec3 sunPos = glm::vec3(-5.0f, 10.0f, -2.0f);
 glm::mat4 lightProjection, lightView;
 glm::mat4 lightSpaceMatrix;
 float deltaTime = 0.0f;
@@ -96,6 +97,7 @@ int main()
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, blackPixel);
 
   InputHandler input(window);
+  playerInput = &input;
   mainCamera = new Camera(&input, (float)screenWidth / screenHeight, 0.1f, 10000.0f, glm::vec3(0.0f, 0.0f, 10.0f));
 
   Shader depthShader("../src/shaders/depthshader.vs", "../src/shaders/depthshader.fs");
@@ -119,17 +121,23 @@ int main()
   litShader.setInt("material.texture_diffuse0", 0);
   litShader.setInt("material.texture_specular0", 1);
   litShader.setInt("material.depthMap", 2);
-  litShader.setVec3("dirLight.ambient", glm::vec3(0.14f));
-  litShader.setVec3("dirLight.diffuse", glm::vec3(0.87f));
-  litShader.setVec3("dirLight.specular", glm::vec3(0.77f));
+  litShader.setVec3("dirLight.ambient", glm::vec3(0.02f));
+  litShader.setVec3("dirLight.diffuse", glm::vec3(1.87f));
+  litShader.setVec3("dirLight.specular", glm::vec3(1.77f));
   litShader.setVec3("dirLight.direction", sunPos);
   litShader.setFloat("material.shininess", 32.0f);
   unsigned int pavementTex = loadTexture("../Resources/pavement/pavement_02_diff_1k.jpg");
   unsigned int metalTex = loadTexture("../Resources/metal/metal_plate_02_diff_1k.jpg");
 
   Model *sponza = CreateModel("../Resources/sponza/sponza.obj", &litShader);
+  // Model *sponza = CreateModel("../Resources/main1_sponza/NewSponza_Main_Zup_003.fbx", &litShader);
+  // Model *curtains = CreateModel("../Resources/main1_sponza/NewSponza_Curtains_FBX_ZUp.fbx", &litShader);
+
   sponza->position = glm::vec3(0.0f, 0.0f, 0.0f);
   sponza->scale = glm::vec3(0.01f);
+
+  // curtains->position = glm::vec3(0.0f, 0.0f, 0.0f);
+  // curtains->scale = glm::vec3(0.01f);
 
   float skyboxVertices[] = {
       // positions
@@ -265,7 +273,7 @@ int main()
       "../Resources/skybox/nz.png",
   };
 
-  const unsigned int SHADOW_WIDTH = 4096, SHADOW_HEIGHT = 4096;
+  const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
   unsigned int depthMapFBO;
   glGenFramebuffers(1, &depthMapFBO);
 
@@ -311,10 +319,10 @@ int main()
 
     input.processInput();
     glEnable(GL_DEPTH_TEST);
-    float near_plane = -10.0f, far_plane = 40.0f;
+    float near_plane = -10.0f, far_plane = 45.0f;
 
-    lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
-    lightView = glm::lookAt(sunPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+    lightProjection = glm::ortho(-25.0f, 25.0f, -25.0f, 25.0f, near_plane, far_plane);
+    lightView = glm::lookAt(sunPos + mainCamera->Position, mainCamera->Position, glm::vec3(0.0, 1.0, 0.0));
     lightSpaceMatrix = lightProjection * lightView;
 
     simpleDepthShader.use();
@@ -323,10 +331,11 @@ int main()
     glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
     glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
-
+    // glCullFace(GL_FRONT);
     DrawShadowScene(&simpleDepthShader);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // glCullFace(GL_BACK);
     litShader.use();
 
     glViewport(0, 0, screenWidth, screenHeight);
@@ -356,7 +365,8 @@ int main()
     glBindTexture(GL_TEXTURE_2D, screenTexture);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    mainCamera->Update(deltaTime);
+    if (!input.jump)
+      mainCamera->Update(deltaTime);
 
     glfwPollEvents();
     glfwSwapBuffers(window);
@@ -376,12 +386,19 @@ void DrawScene(bool sunCam, Shader *altShader)
   {
     projection = lightProjection;
     view = lightView;
+
+    sunPos.x += playerInput->moveInput.x * deltaTime * 10.1f;
+    sunPos.z += playerInput->moveInput.y * deltaTime * 10.1f;
   }
 
   glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
   glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
   glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+  glActiveTexture(GL_TEXTURE3);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+  glActiveTexture(GL_TEXTURE0);
 
   for (const auto &pair : shaderGroups)
   {

@@ -1,3 +1,27 @@
+// {
+//     "version": "2.0.0",
+//     "tasks": [
+//         {
+//             "label": "Build with cl",
+//             "type": "shell",
+//             "command": "cmd.exe",
+//             "args": [
+//                 "/C",
+//                 "pushd \"${workspaceFolder}/build\" && \"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat\" x64 && cl /Felearnopengl /EHsc /Zi /DEBUG msvcrt.lib glfw3.lib user32.lib gdi32.lib shell32.lib ../src/*.cpp ../src/*.c -I../include /link /libpath:../lib assimp-vc143-mt.lib /NODEFAULTLIB:libcmt && popd"
+//             ],
+//             "group": {
+//                 "kind": "build",
+//                 "isDefault": true
+//             },
+//             "problemMatcher": [
+//                 "$msCompile"
+//             ],
+//             "options": {
+//                 "cwd": "${workspaceFolder}"
+//             }
+//         }
+//     ]
+// }
 {
     "version": "2.0.0",
     "tasks": [
@@ -7,7 +31,7 @@
             "command": "cmd.exe",
             "args": [
                 "/C",
-                "pushd \"${workspaceFolder}/build\" && \"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat\" x64 && cl /Felearnopengl /EHsc /Zi /DEBUG msvcrt.lib glfw3.lib user32.lib gdi32.lib shell32.lib ../src/*.cpp ../src/*.c -I../include /link /libpath:../lib assimp-vc143-mt.lib /NODEFAULTLIB:libcmt && popd"
+                "pushd \"${workspaceFolder}/build\" && \"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat\" x64 && cl /Felearnopengl /O2 /GL /DNDEBUG /MT msvcrt.lib glfw3.lib user32.lib gdi32.lib shell32.lib ../src/*.cpp ../src/*.c -I../include /link /libpath:../lib assimp-vc143-mt.lib /NODEFAULTLIB:libcmt && popd"
             ],
             "group": {
                 "kind": "build",

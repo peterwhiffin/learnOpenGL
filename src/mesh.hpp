@@ -28,8 +28,9 @@ public:
   std::vector<unsigned int> indices;
   std::vector<Texture> textures;
   glm::vec3 baseColor;
+  std::string name;
 
-  Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, aiColor3D baseColor)
+  Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, aiColor3D baseColor, std::string name)
   {
     this->vertices = vertices;
     this->indices = indices;
@@ -37,6 +38,7 @@ public:
     this->baseColor.x = baseColor.r;
     this->baseColor.y = baseColor.g;
     this->baseColor.z = baseColor.b;
+    this->name = name;
 
     // if (textures.size() == 0) {
     //   Texture defaultTex;
@@ -79,6 +81,7 @@ public:
 
     if (!hasSpecular)
     {
+      // std::cout << "no specular: " << name << std::endl;
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, 1);
     }

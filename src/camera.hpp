@@ -10,11 +10,12 @@
 
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
-const float SPEED = 15.5f;
+const float SPEED = 10.5f;
 const float SENSITIVITY = 0.1f;
 
-class Camera {
- public:
+class Camera
+{
+public:
   glm::vec3 Position;
   glm::quat rotation = glm::quat(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -28,17 +29,18 @@ class Camera {
   float nearPlane;
   float farPlane;
 
-  InputHandler* input;
+  InputHandler *input;
   // constructor with vectors
   Camera(
-      InputHandler* inputHandler,
+      InputHandler *inputHandler,
       float aspectRatio,
       float nearPlane = 0.1,
       float farPlane = 1000,
       glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
       float yaw = YAW,
       float pitch = PITCH) : MovementSpeed(SPEED),
-                             MouseSensitivity(SENSITIVITY) {
+                             MouseSensitivity(SENSITIVITY)
+  {
 
     Position = position;
     Yaw = yaw;
@@ -50,28 +52,34 @@ class Camera {
     fov = 67.0f;
   }
 
-  glm::mat4 GetViewMatrix() {
+  glm::mat4 GetViewMatrix()
+  {
     return glm::lookAt(Position, Position + forward(), up());
   }
 
-  glm::mat4 GetProjection() {
+  glm::mat4 GetProjection()
+  {
     return glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
     // return glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
   }
 
-  glm::vec3 right() {
+  glm::vec3 right()
+  {
     return QuaternionByVector3(rotation, glm::vec3(1.0f, 0.0f, 0.0f));
   }
 
-  glm::vec3 up() {
+  glm::vec3 up()
+  {
     return QuaternionByVector3(rotation, glm::vec3(0.0f, 1.0f, 0.0f));
   }
 
-  glm::vec3 forward() {
+  glm::vec3 forward()
+  {
     return QuaternionByVector3(rotation, glm::vec3(0.0f, 0.0f, 1.0f));
   }
 
-  glm::vec3 QuaternionByVector3(glm::quat rotation, glm::vec3 point) {
+  glm::vec3 QuaternionByVector3(glm::quat rotation, glm::vec3 point)
+  {
     float num = rotation.x + rotation.x;
     float num2 = rotation.y + rotation.y;
     float num3 = rotation.z + rotation.z;
@@ -97,20 +105,23 @@ class Camera {
     return result;
   }
 
-  void Update(float deltaTime) {
+  void Update(float deltaTime)
+  {
     ProcessMouseMovement(input->mouseX, input->mouseY);
     glm::vec3 moveDir = input->moveInput.y * forward() + input->moveInput.x * right();
     Position += moveDir * MovementSpeed * deltaTime;
   }
 
-  void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true) {
+  void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true)
+  {
     xoffset *= MouseSensitivity;
     yoffset *= MouseSensitivity;
 
     Yaw -= xoffset;
     Pitch -= yoffset;
 
-    if (constrainPitch) {
+    if (constrainPitch)
+    {
       if (Pitch > 89.0f)
         Pitch = 89.0f;
       if (Pitch < -89.0f)
@@ -120,7 +131,8 @@ class Camera {
     rotation = glm::quat(glm::vec3(glm::radians(Pitch), glm::radians(Yaw), 0.0f));
   }
 
-  void ProcessMouseScroll(float yoffset) {
+  void ProcessMouseScroll(float yoffset)
+  {
     fov -= (float)yoffset;
 
     if (fov < 1.0f)

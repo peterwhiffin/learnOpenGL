@@ -58,8 +58,13 @@ private:
   void loadModel(std::string path)
   {
     Assimp::Importer importer;
-    const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-
+    // const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate |
+                                                       aiProcess_FlipUVs |
+                                                       aiProcess_JoinIdenticalVertices |
+                                                       aiProcess_OptimizeMeshes |
+                                                       aiProcess_OptimizeGraph |
+                                                       aiProcess_ImproveCacheLocality);
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
       std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
@@ -67,26 +72,31 @@ private:
     }
 
     directory = path.substr(0, path.find_last_of('/'));
-
-    processNode(scene->mRootNode, scene);
+    processNode(scene->mRootNode, scene, glm::mat4(1.0f));
   }
 
-  void processNode(aiNode *node, const aiScene *scene)
+  void processNode(aiNode *node, const aiScene *scene, glm::mat4 parentTransform)
   {
     // process all the node's meshes (if any)
+    // Convert Assimp transformation matrix to GLM
+    glm::mat4 nodeTransform = glm::transpose(glm::make_mat4(&node->mTransformation.a1));
+
+    // Accumulate transformation
+    glm::mat4 globalTransform = parentTransform * nodeTransform;
+
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
       aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
-      meshes.push_back(processMesh(mesh, scene));
+      meshes.push_back(processMesh(mesh, scene, globalTransform));
     }
     // then do the same for each of its children
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
-      processNode(node->mChildren[i], scene);
+      processNode(node->mChildren[i], scene, globalTransform);
     }
   }
 
-  Mesh processMesh(aiMesh *mesh, const aiScene *scene)
+  Mesh processMesh(aiMesh *mesh, const aiScene *scene, const glm::mat4 &transform)
   {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
@@ -96,16 +106,21 @@ private:
     {
       Vertex vertex;
       // process vertex positions, normals and texture coordinates
-      glm::vec3 vector;
-      vector.x = mesh->mVertices[i].x;
-      vector.y = mesh->mVertices[i].y;
-      vector.z = mesh->mVertices[i].z;
-      vertex.Position = vector;
+      // glm::vec3 vector;
+      // vector.x = mesh->mVertices[i].x;
+      // vector.y = mesh->mVertices[i].y;
+      // vector.z = mesh->mVertices[i].z;
+      // vertex.Position = vector;
 
-      vector.x = mesh->mNormals[i].x;
-      vector.y = mesh->mNormals[i].y;
-      vector.z = mesh->mNormals[i].z;
-      vertex.Normal = vector;
+      // vector.x = mesh->mNormals[i].x;
+      // vector.y = mesh->mNormals[i].y;
+      // vector.z = mesh->mNormals[i].z;
+      // vertex.Normal = vector;
+      glm::vec4 position(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, 1.0f);
+      vertex.Position = glm::vec3(transform * position);
+
+      glm::vec4 normal(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f);
+      vertex.Normal = glm::normalize(glm::vec3(transform * normal));
 
       vertex.TexCoords = glm::vec2(0.0f, 0.0f);
 
@@ -130,20 +145,22 @@ private:
 
     aiColor3D baseColor(1.0f, 1.0f, 1.0f);
     // process material
+    std::string name;
     if (mesh->mMaterialIndex >= 0)
     {
       aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-      std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+      std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", true);
       material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor);
       textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
       std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
       textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+      name = material->GetName().C_Str();
     }
 
-    return Mesh(vertices, indices, textures, baseColor);
+    return Mesh(vertices, indices, textures, baseColor, name);
   }
 
-  std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName)
+  std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName, bool gamma = false)
   {
     std::vector<Texture> textures;
     for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -165,7 +182,7 @@ private:
       if (!skip)
       { // if texture hasn't been loaded already, load it
         Texture texture;
-        texture.id = TextureFromFile(str.C_Str(), directory);
+        texture.id = TextureFromFile(str.C_Str(), directory, gamma);
         texture.type = typeName;
         texture.path = str.C_Str();
         textures.push_back(texture);
@@ -190,29 +207,26 @@ unsigned int TextureFromFile(const char *path, const std::string &directory, boo
 
   if (data)
   {
-    std::string formatName;
-
     GLenum format;
+    GLenum internalFormat;
     if (nrComponents == 1)
     {
       format = GL_RED;
-      formatName = "GL_RED";
+      internalFormat = GL_RED;
     }
     else if (nrComponents == 3)
     {
       format = GL_RGB;
-      formatName = "GL_RGB";
+      internalFormat = gamma ? GL_SRGB : GL_RGB;
     }
     else if (nrComponents == 4)
     {
       format = GL_RGBA;
-      formatName = "GL_RGBA";
+      internalFormat = gamma ? GL_SRGB_ALPHA : GL_RGBA;
     }
 
-    // std::cout << "texture: " << filename << formatName << std::endl;
-
     glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

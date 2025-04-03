@@ -8,6 +8,7 @@ struct Material {
     sampler2D texture_diffuse0;
     sampler2D texture_specular0;
     sampler2D depthMap;
+    samplerCube skybox;
     float shininess;
 };
 
@@ -80,7 +81,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // calculate bias (based on depth map resolution and slope)
     vec3 normal = normalize(normal);
     vec3 lightDir = normalize(dirLight.direction - fragPos);
-    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.001);
     // check whether current frag pos is in shadow
     //float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
     // PCF
@@ -99,6 +100,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     //keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
     if(projCoords.z > 1.0)
         shadow = 0.0;
+    
     //shadow = 1.0f;
     return shadow;
 }
@@ -125,16 +127,17 @@ if(diffuseTexColor.a < 0.1f)
     // phase 3: Spot light
 //    result += CalcSpotLight(spotLight, norm, fragPos, viewDir);    
 
+    result = pow(result, vec3(1.0/2.2));
     FragColor = vec4(result, 1.0f);
 }
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color){
     vec3 lightDir = normalize(light.direction - fragPos);
-
+    vec3 halfwayDir = normalize(lightDir + viewDir);
     float diff = max(dot(normal, lightDir), 0.0);
 
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
     vec3 ambient = light.ambient * vec3(diffuseTexColor);
     vec3 diffuse = light.diffuse * diff * vec3(diffuseTexColor);
@@ -142,8 +145,11 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color){
   //  vec3 ambient = light.ambient * color;
  //   vec3 diffuse = light.diffuse * diff * color;
 //    vec3 specular = light.specular * spec * color;
+
     float shadow = ShadowCalculation(FragPosLightSpace);   
     vec3 lighting = (ambient + (1.0 - shadow) * (specular + diffuse));   
+    //just removing the specular to mess with this intel sponza that is made for pbr, which I'm not using yet.
+    //vec3 lighting = (ambient + (1.0 - shadow) * (diffuse));   
     return lighting;
 }
 
