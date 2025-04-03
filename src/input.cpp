@@ -52,6 +52,15 @@ void InputHandler::handleKeys()
   {
     jump = false;
   }
+
+  if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+  {
+    debug = true;
+  }
+  else
+  {
+    debug = false;
+  }
 }
 void InputHandler::handleMouse()
 {

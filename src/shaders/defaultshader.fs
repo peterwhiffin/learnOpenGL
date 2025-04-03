@@ -81,12 +81,14 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // calculate bias (based on depth map resolution and slope)
     vec3 normal = normalize(normal);
     vec3 lightDir = normalize(dirLight.direction - fragPos);
-    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.001);
+    float bias = max(0.01 * (1.0 - dot(normal, lightDir)), 0.001);
     // check whether current frag pos is in shadow
     //float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
     // PCF
     float shadow = 0.0;
-    vec2 texelSize = 1.0 / textureSize(material.depthMap, 0);
+    //vec2 texelSize = 1.0 / textureSize(material.depthMap, 0);
+    vec2 texelSize = vec2(1.0) / vec2(textureSize(material.depthMap, 0));
+    
     for(int x = -1; x <= 1; ++x)
     {
         for(int y = -1; y <= 1; ++y)
@@ -128,7 +130,8 @@ if(diffuseTexColor.a < 0.1f)
 //    result += CalcSpotLight(spotLight, norm, fragPos, viewDir);    
 
     result = pow(result, vec3(1.0/2.2));
-    FragColor = vec4(result, 1.0f);
+    float luminance = dot(result.rgb, vec3(0.2126729f,  0.7151522f, 0.0721750f));
+    FragColor = vec4(result, luminance);
 }
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color){
