@@ -24,6 +24,7 @@ out vec3 fragPos;
 out vec3 originalFragPos;
 out vec3 lightPos;
 out vec4 FragPosLightSpace;
+out mat4 u_lightMatrix;
 
 void main()
 {    
@@ -32,5 +33,6 @@ void main()
     normal = mat3(normalMat) * aNormal;  
     texCoord = aTexCoord;   
     FragPosLightSpace = lightSpaceMatrix * vec4(fragPos, 1.0);
+    u_lightMatrix = lightSpaceMatrix;
     gl_Position = projection * view * vec4(fragPos, 1.0);
 }  

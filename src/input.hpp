@@ -18,6 +18,8 @@ public:
   glm::vec2 moveInput;
   double mouseX, mouseY;
   float oldMouseX, oldMouseY;
+  bool leftClick;
+  bool rightClick;
   bool jump;
   bool debug;
 

@@ -8,6 +8,7 @@ struct Material {
     sampler2D texture_diffuse0;
     sampler2D texture_specular0;
     sampler2D depthMap;
+    sampler2D blueNoise;
     samplerCube skybox;
     float shininess;
 };
@@ -48,7 +49,7 @@ struct PointLight{
     vec3 specular;
 };
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color);  
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color, vec3 ambient);  
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);  
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
@@ -57,6 +58,7 @@ in vec3 fragPos;
 in vec2 texCoord;
 in vec3 originalFragPos;
 in vec4 FragPosLightSpace;
+in mat4 u_lightMatrix;
 
 uniform vec3 viewPos;
 uniform Material material;
@@ -64,9 +66,42 @@ uniform DirLight dirLight;
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform SpotLight spotLight;
 uniform vec3 baseColor;
+uniform vec3 fogColor;
+uniform float fogStart;
+uniform float fogEnd;
+
+uniform mat4 u_invViewProj;
+uniform mat4 u_invLightViewProj;
+//uniform mat4 u_lightMatrix;
+uniform ivec2 u_screenSize = ivec2(800, 600);
+uniform int NUM_STEPS = 32;
+uniform float intensity = .035;
+uniform float noiseOffset = 1.0;
+uniform float u_beerPower = 1.0;
+uniform float u_powderPower = 1.0;
+uniform vec2 screenResolution;
 
 vec4 diffuseTexColor;
 vec4 specularTexColor;
+
+float chebyshevUpperBound(vec2 moments, float currentDepth)
+{
+    float p = 0.0; // Default to full light if variance is 0
+    float mean = moments.x;
+    float variance = moments.y - (mean * mean);
+    variance = max(variance, 0.00002); // Avoid negative variance
+
+    float d = currentDepth - mean;
+    float pMax = variance / (variance + d * d);
+    
+    if (currentDepth > mean)
+        p = pMax;
+    else
+        p = 1.0;
+
+    return p;
+}
+
 
 float ShadowCalculation(vec4 fragPosLightSpace)
 {
@@ -78,33 +113,68 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     float closestDepth = texture(material.depthMap, projCoords.xy).r; 
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
-    // calculate bias (based on depth map resolution and slope)
+
     vec3 normal = normalize(normal);
     vec3 lightDir = normalize(dirLight.direction - fragPos);
-    float bias = max(0.01 * (1.0 - dot(normal, lightDir)), 0.001);
-    // check whether current frag pos is in shadow
-    //float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
-    // PCF
+    float diffuseFactor = dot(normal, -lightDir);
+    // calculate bias (based on depth map resolution and slope)
+    float bias = mix(0.005, 0.0, diffuseFactor);
+
     float shadow = 0.0;
-    //vec2 texelSize = 1.0 / textureSize(material.depthMap, 0);
     vec2 texelSize = vec2(1.0) / vec2(textureSize(material.depthMap, 0));
-    
-    for(int x = -1; x <= 1; ++x)
+
+    int count = 0;
+    int samples = 1;
+
+    for(int x = -samples; x <= samples; ++x)
     {
-        for(int y = -1; y <= 1; ++y)
+        for(int y = -samples; y <= samples; ++y)
         {
+            count++;
+            float shad;
             float pcfDepth = texture(material.depthMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
+            shad = currentDepth - bias > pcfDepth  ? 1.0 : 0.0;
+            shadow += shad;        
         }    
     }
-    shadow /= 9.0;
-    
-    //keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
+
+    shadow /= count;
+
     if(projCoords.z > 1.0)
         shadow = 0.0;
     
-    //shadow = 1.0f;
     return shadow;
+}
+
+float remap(float value, float inputMin, float inputMax, float outputMin, float outputMax) {
+  float normalizedValue = (value - inputMin) / (inputMax - inputMin);
+  return normalizedValue * (outputMax - outputMin) + outputMin;
+}
+
+vec3 WorldPosFromDepth(float depth, vec2 screenSize, mat4 invViewProj)
+{
+  float z = depth * 2.0 - 1.0; // [0, 1] -> [-1, 1]
+  vec2 normalized = gl_FragCoord.xy / screenSize; // [0.5, u_viewPortSize] -> [0, 1]
+  vec4 clipSpacePosition = vec4(normalized * 2.0 - 1.0, z, 1.0); // [0, 1] -> [-1, 1]
+
+  // undo view + projection
+  vec4 worldSpacePosition = invViewProj * clipSpacePosition;
+  worldSpacePosition /= worldSpacePosition.w;
+
+  return worldSpacePosition.xyz;
+}
+
+vec3 LightWorldPosFromDepth(float depth, vec2 screenSize, mat4 invViewProj)
+{
+  float z = depth * 2.0 - 1.0; // [0, 1] -> [-1, 1]
+  vec2 normalized = gl_FragCoord.xy / screenSize; // [0.5, u_viewPortSize] -> [0, 1]
+  vec4 clipSpacePosition = vec4(normalized * 2.0 - 1.0, z, 1.0); // [0, 1] -> [-1, 1]
+
+  // undo view + projection
+  vec4 worldSpacePosition = invViewProj * clipSpacePosition;
+  worldSpacePosition /= worldSpacePosition.w;
+
+  return worldSpacePosition.xyz;
 }
 
 void main()
@@ -122,19 +192,54 @@ if(diffuseTexColor.a < 0.1f)
     vec3 norm = normalize(normal);
     vec3 viewDir = normalize(viewPos - fragPos);
     // phase 1: Directional lighting
-     vec3 result = CalcDirLight(dirLight, norm, viewDir, baseColor);
+     
     // phase 2: Point lights
  //   for(int i = 0; i < NR_POINT_LIGHTS; i++)
 //        result += CalcPointLight(pointLights[i], norm, fragPos, viewDir);    
     // phase 3: Spot light
 //    result += CalcSpotLight(spotLight, norm, fragPos, viewDir);    
 
-    result = pow(result, vec3(1.0/2.2));
+    
+
+    //result = mix(result, fogColor, remap(fragPos.z - viewPos.z, distance(viewPos, viewDir * fogStart), distance(viewPos, viewDir * fogEnd), 0.0f, 1.0f));
+
+  const vec3 rayEnd = WorldPosFromDepth(gl_FragCoord.z, u_screenSize, u_invViewProj);
+  const vec3 rayStart = WorldPosFromDepth(0, u_screenSize, u_invViewProj);
+  const vec3 rayDir = normalize(rayEnd - rayStart);
+  const float totalDistance = distance(rayStart, rayEnd);
+  const float rayStep = totalDistance / NUM_STEPS;
+  const vec2 noiseUV = gl_FragCoord.xy / textureSize(material.blueNoise, 0);
+  vec3 rayPos = rayStart + rayDir * rayStep * texture(material.blueNoise, noiseUV).x * noiseOffset;
+  
+  float accum = 0.0;
+  float ambientAccum = 0.0;
+  vec3 ambient = dirLight.ambient;
+//vec2 screenUV = gl_FragCoord.xy / screenResolution;
+  for (int i = 0; i < NUM_STEPS; i++)
+  {
+    vec4 lightSpacePos = u_lightMatrix * vec4(rayPos, 1.0);
+    float shadowCalc = ShadowCalculation(lightSpacePos);
+    accum += 1.0 - shadowCalc;
+    rayPos += rayDir * rayStep;
+  }
+
+  const float d = accum * rayStep * intensity;
+  const float powder = 1.0 - exp(-d * 2.0 * u_powderPower);
+  const float beer = exp(-d * u_beerPower);
+
+
+  vec3 result = CalcDirLight(dirLight, norm, viewDir, baseColor, ambient);
+  result = pow(result, vec3(1.0/2.2));
+
+  result += (1.0 - beer) * powder;
+
+  
+
     float luminance = dot(result.rgb, vec3(0.2126729f,  0.7151522f, 0.0721750f));
     FragColor = vec4(result, luminance);
 }
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color){
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color, vec3 ambient){
     vec3 lightDir = normalize(light.direction - fragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float diff = max(dot(normal, lightDir), 0.0);
@@ -142,17 +247,15 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 color){
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
-    vec3 ambient = light.ambient * vec3(diffuseTexColor);
+    ambient = ambient * vec3(diffuseTexColor);
     vec3 diffuse = light.diffuse * diff * vec3(diffuseTexColor);
     vec3 specular = light.specular * spec * vec3(specularTexColor.r);
-  //  vec3 ambient = light.ambient * color;
- //   vec3 diffuse = light.diffuse * diff * color;
-//    vec3 specular = light.specular * spec * color;
+
+    //vec2 screenUV = gl_FragCoord.xy / screenResolution;
 
     float shadow = ShadowCalculation(FragPosLightSpace);   
     vec3 lighting = (ambient + (1.0 - shadow) * (specular + diffuse));   
-    //just removing the specular to mess with this intel sponza that is made for pbr, which I'm not using yet.
-    //vec3 lighting = (ambient + (1.0 - shadow) * (diffuse));   
+
     return lighting;
 }
 

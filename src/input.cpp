@@ -61,6 +61,9 @@ void InputHandler::handleKeys()
   {
     debug = false;
   }
+
+  leftClick = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS ? true : false;
+  rightClick = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS ? true : false;
 }
 void InputHandler::handleMouse()
 {

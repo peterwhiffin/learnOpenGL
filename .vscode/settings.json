@@ -70,6 +70,10 @@
         "xtree": "cpp",
         "unordered_set": "cpp",
         "glad.h": "c",
-        "complex": "cpp"
+        "complex": "cpp",
+        "mutex": "cpp",
+        "set": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp"
     }
 }

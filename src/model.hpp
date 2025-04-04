@@ -58,13 +58,13 @@ private:
   void loadModel(std::string path)
   {
     Assimp::Importer importer;
-    // const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-    const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate |
-                                                       aiProcess_FlipUVs |
-                                                       aiProcess_JoinIdenticalVertices |
-                                                       aiProcess_OptimizeMeshes |
-                                                       aiProcess_OptimizeGraph |
-                                                       aiProcess_ImproveCacheLocality);
+    const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    // const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate |
+    //                                                    aiProcess_FlipUVs |
+    //                                                    aiProcess_JoinIdenticalVertices |
+    //                                                    aiProcess_OptimizeMeshes |
+    //                                                    aiProcess_OptimizeGraph |
+    //                                                    aiProcess_ImproveCacheLocality);
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
       std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
@@ -163,6 +163,7 @@ private:
   std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName, bool gamma = false)
   {
     std::vector<Texture> textures;
+
     for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
     {
       aiString str;

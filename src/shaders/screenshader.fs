@@ -22,6 +22,7 @@ in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
 uniform bool doFXAA;
+uniform bool useAlpha;
 
 const float offset = 1.0 / 300.0;
 
@@ -33,7 +34,13 @@ float sampleLuminance(vec2 uv){
 
 float sampleLuminance(vec2 uv, float uOffset, float vOffset){
     uv += vec2(1.0) / vec2(textureSize(screenTexture, 0)) * vec2(uOffset, vOffset);
-    return texture(screenTexture, uv).a;
+    
+    if(useAlpha){
+        return texture(screenTexture, uv).a;
+    }
+    else{
+        return texture(screenTexture, uv).g;
+    }
 }
 
 LuminanceData SampleLuminanceNeighborhood (vec2 uv){
@@ -182,11 +189,6 @@ float DetermineEdgeBlendFactor(LuminanceData l, EdgeData e, vec2 uv){
 
 void main(){
 //vec4 color = texture(screenTexture, TexCoords);
-
-if(!doFXAA){
-    FragColor = textureLod(screenTexture, TexCoords, 0);
-    return;
-}
 
 LuminanceData l = SampleLuminanceNeighborhood(TexCoords);
 
