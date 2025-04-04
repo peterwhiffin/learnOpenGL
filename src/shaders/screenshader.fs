@@ -189,7 +189,8 @@ float DetermineEdgeBlendFactor(LuminanceData l, EdgeData e, vec2 uv){
 
 void main(){
 //vec4 color = texture(screenTexture, TexCoords);
-
+FragColor = vec4(vec3(texture(screenTexture, TexCoords)), 1.0f);
+return;
 LuminanceData l = SampleLuminanceNeighborhood(TexCoords);
 
 if(shouldSkipPixel(l)){
