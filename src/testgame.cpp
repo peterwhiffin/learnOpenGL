@@ -2,7 +2,6 @@
 #include <glfw/glfw3.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-
 #include <assimp/Importer.hpp>
 #include <complex>
 #include <glm/glm.hpp>
@@ -26,22 +25,24 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void DrawScene(bool sunCam, Shader *altShader);
 void DrawCubeScene(Shader *shader);
 void DrawShadowScene(Shader *shader);
-Model *CreateModel(char *path, Shader *newShader);
 void processInput(GLFWwindow *window, Camera *cam);
 void mouse_callback(GLFWwindow *window);
 unsigned int loadTexture(char const *path);
 unsigned int loadCubemap(std::vector<std::string> faces);
+Model *CreateModel(char *path, Shader *newShader);
 
 Camera *mainCamera;
 Shader *skyboxShader;
 InputHandler *playerInput;
 std::map<Shader, std::vector<Model *>> shaderGroups;
+
 glm::mat4 view = glm::mat4(1.0f);
 glm::mat4 projection = glm::mat4(1.0f);
 glm::vec3 viewPos = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 sunPos = glm::vec3(-3.0f, 30.0f, -2.0f);
 glm::mat4 lightProjection, lightView;
 glm::mat4 lightSpaceMatrix;
+
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 float lastX = 0.0f;
@@ -466,7 +467,6 @@ void DrawScene(bool sunCam, Shader *altShader) {
   glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
   glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
   // glActiveTexture(GL_TEXTURE3);
   // glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
   // glActiveTexture(GL_TEXTURE0);
