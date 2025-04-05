@@ -3,50 +3,17 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**",
-                "X:\\glfw-3.4\\include",
-                "X:/assimp/include"
+                "include"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
-                "_UNICODE",
-                "_GLFW_WIN32"
+                "_UNICODE"
             ],
             "windowsSdkVersion": "10.0.22621.0",
             "cStandard": "c17",
             "cppStandard": "c++17",
             "intelliSenseMode": "windows-msvc-x64"
-        },
-        {
-            "name": "glfw",
-            "includePath": [
-                "x:/Repos/GLFW/TestProject/**",
-                "X:/glfw-3.4/include",
-                "X:/assimp/include"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
-                "_GLFW_WIN32"
-            ],
-            "windowsSdkVersion": "10.0.22621.0",
-            "cStandard": "c17",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64",
-            "mergeConfigurations": false,
-            "compilerPath": "",
-            "browse": {
-                "path": [
-                    "x:/Repos/GLFW/TestProject/**",
-                    "X:/glfw-3.4/include",
-                    "x:/Repos/GLFW/TestProject",
-                    "X:/assimp/include"
-                ],
-                "limitSymbolsToIncludedHeaders": true
-            },
-            "compilerPathInCppPropertiesJson": ""
         }
     ],
     "version": 4

@@ -1,7 +1,8 @@
-#include <GLAD/glad.h>
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
+#include <glfw/glfw3.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+
 #include <assimp/Importer.hpp>
 #include <complex>
 #include <glm/glm.hpp>
@@ -12,10 +13,10 @@
 #include <string>
 #include <vector>
 
+#include "camera.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include "camera.hpp"
 #include "input.hpp"
 #include "model.hpp"
 #include "shader.hpp"
@@ -61,16 +62,14 @@ unsigned int uboMatrices;
 unsigned int cubeVAO, cubeVBO;
 unsigned int planeVAO, planeVBO;
 
-enum ControlMode
-{
+enum ControlMode {
   CAM,
   UI
 };
 
 ControlMode controlMode = UI;
 
-int main()
-{
+int main() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -79,8 +78,7 @@ int main()
 
   GLFWwindow *window = glfwCreateWindow(screenWidth, screenHeight, "Pete's graphics", NULL, NULL);
 
-  if (window == NULL)
-  {
+  if (window == NULL) {
     std::cout << "Failed to create GLFW window" << std::endl;
     glfwTerminate();
     return -1;
@@ -88,8 +86,7 @@ int main()
 
   glfwMakeContextCurrent(window);
 
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-  {
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     std::cout << "Failed to initialize GLAD" << std::endl;
     return -1;
   }
@@ -98,13 +95,12 @@ int main()
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   glfwSwapInterval(0);
-
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
   (void)io;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
@@ -286,8 +282,7 @@ int main()
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-  {
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
     std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
   }
 
@@ -348,8 +343,7 @@ int main()
   bool showDemoWindow = true;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  while (!glfwWindowShouldClose(window))
-  {
+  while (!glfwWindowShouldClose(window)) {
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
@@ -406,12 +400,9 @@ int main()
 
     screenShader.use();
     screenShader.setVec2("screenResolution", glm::vec2(screenWidth, screenHeight));
-    if (input.debug)
-    {
+    if (input.debug) {
       screenShader.SetBool("useAlpha", false);
-    }
-    else
-    {
+    } else {
       screenShader.SetBool("useAlpha", true);
     }
     glBindVertexArray(quadVAO);
@@ -420,22 +411,16 @@ int main()
     glBindTexture(GL_TEXTURE_2D, fullscreenTexture);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    if (!input.jump)
-    {
-      if (input.rightClick)
-      {
-        if (controlMode != CAM)
-        {
+    if (!input.jump) {
+      if (input.rightClick) {
+        if (controlMode != CAM) {
           glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
           controlMode = CAM;
         }
 
         mainCamera->Update(deltaTime);
-      }
-      else
-      {
-        if (controlMode != UI)
-        {
+      } else {
+        if (controlMode != UI) {
           glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
           controlMode = UI;
         }
@@ -450,9 +435,7 @@ int main()
   return 0;
 }
 
-void DrawScene(bool sunCam, Shader *altShader)
-{
-
+void DrawScene(bool sunCam, Shader *altShader) {
   projection = mainCamera->GetProjection();
   viewPos = mainCamera->Position;
   glm::mat4 invViewProj = glm::inverse(projection * view);
@@ -471,8 +454,7 @@ void DrawScene(bool sunCam, Shader *altShader)
   glDepthFunc(GL_LESS);
 
   view = mainCamera->GetViewMatrix();
-  if (sunCam)
-  {
+  if (sunCam) {
     projection = lightProjection;
     view = lightView;
 
@@ -489,42 +471,35 @@ void DrawScene(bool sunCam, Shader *altShader)
   // glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
   // glActiveTexture(GL_TEXTURE0);
 
-  for (const auto &pair : shaderGroups)
-  {
+  for (const auto &pair : shaderGroups) {
     pair.first.use();
     pair.first.setVec3("dirLight.direction", sunPos);
     pair.first.setVec3("viewPos", viewPos);
     pair.first.setMat4("u_invViewProj", invViewProj);
 
-    for (Model *m : pair.second)
-    {
+    for (Model *m : pair.second) {
       m->Draw(&pair.first);
     }
   }
 }
 
-void DrawShadowScene(Shader *shader)
-{
-  for (const auto &pair : shaderGroups)
-  {
+void DrawShadowScene(Shader *shader) {
+  for (const auto &pair : shaderGroups) {
     shader->use();
 
-    for (Model *m : pair.second)
-    {
+    for (Model *m : pair.second) {
       m->Draw(shader);
     }
   }
 }
 
-Model *CreateModel(char *path, Shader *newShader)
-{
+Model *CreateModel(char *path, Shader *newShader) {
   Model *newModel = new Model(path);
   shaderGroups[*newShader].push_back(newModel);
   return newModel;
 }
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height)
-{
+void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
   screenWidth = width;
   screenHeight = height;
@@ -536,28 +511,21 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, screenWidth, screenHeight);
 }
 
-unsigned int loadTexture(char const *path)
-{
+unsigned int loadTexture(char const *path) {
   unsigned int textureID;
   glGenTextures(1, &textureID);
 
   int width, height, nrChannels;
   unsigned char *data = stbi_load(path, &width, &height, &nrChannels, 0);
 
-  if (data)
-  {
+  if (data) {
     GLenum pixelFormat;
 
-    if (nrChannels == 1)
-    {
+    if (nrChannels == 1) {
       pixelFormat = GL_RED;
-    }
-    else if (nrChannels == 3)
-    {
+    } else if (nrChannels == 3) {
       pixelFormat = GL_RGB;
-    }
-    else if (nrChannels == 4)
-    {
+    } else if (nrChannels == 4) {
       pixelFormat = GL_RGBA;
     }
 
@@ -568,9 +536,7 @@ unsigned int loadTexture(char const *path)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  }
-  else
-  {
+  } else {
     std::cout << "Texture failed to load at path: " << path << std::endl;
   }
 
@@ -578,40 +544,30 @@ unsigned int loadTexture(char const *path)
   return textureID;
 }
 
-unsigned int loadCubemap(std::vector<std::string> faces)
-{
+unsigned int loadCubemap(std::vector<std::string> faces) {
   stbi_set_flip_vertically_on_load(false);
   unsigned int textureID;
   glGenTextures(1, &textureID);
   glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
   int width, height, nrChannels;
-  for (unsigned int i = 0; i < faces.size(); i++)
-  {
+  for (unsigned int i = 0; i < faces.size(); i++) {
     unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-    if (data)
-    {
+    if (data) {
       GLenum pixelFormat;
 
-      if (nrChannels == 1)
-      {
+      if (nrChannels == 1) {
         pixelFormat = GL_RED;
-      }
-      else if (nrChannels == 3)
-      {
+      } else if (nrChannels == 3) {
         pixelFormat = GL_RGB;
-      }
-      else if (nrChannels == 4)
-      {
+      } else if (nrChannels == 4) {
         pixelFormat = GL_RGBA;
       }
 
       glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
                    0, pixelFormat, width, height, 0, pixelFormat, GL_UNSIGNED_BYTE, data);
       stbi_image_free(data);
-    }
-    else
-    {
+    } else {
       std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
       stbi_image_free(data);
     }
