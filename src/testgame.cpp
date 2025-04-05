@@ -38,7 +38,7 @@ std::map<Shader, std::vector<Model *>> shaderGroups;
 glm::mat4 view = glm::mat4(1.0f);
 glm::mat4 projection = glm::mat4(1.0f);
 glm::vec3 viewPos = glm::vec3(0.0f, 0.0f, 0.0f);
-glm::vec3 sunPos = glm::vec3(-3.0f, 40.0f, -2.0f);
+glm::vec3 sunPos = glm::vec3(-3.0f, 30.0f, -2.0f);
 glm::mat4 lightProjection, lightView;
 glm::mat4 lightSpaceMatrix;
 float deltaTime = 0.0f;
@@ -152,9 +152,9 @@ int main()
   litShader.setInt("material.texture_diffuse0", 0);
   litShader.setInt("material.texture_specular0", 1);
   litShader.setInt("material.depthMap", 2);
-  litShader.setVec3("dirLight.ambient", glm::vec3(0.02f));
-  litShader.setVec3("dirLight.diffuse", glm::vec3(.85f));
-  litShader.setVec3("dirLight.specular", glm::vec3(0.77f));
+  litShader.setVec3("dirLight.ambient", glm::vec3(0.01f));
+  litShader.setVec3("dirLight.diffuse", glm::vec3(.98f));
+  litShader.setVec3("dirLight.specular", glm::vec3(0.37f));
   litShader.setVec3("dirLight.direction", sunPos);
   litShader.setFloat("material.shininess", 32.0f);
   // uniform vec3 fogColor;
@@ -363,9 +363,9 @@ int main()
     ImGui::ShowDemoWindow(&showDemoWindow);
 
     glEnable(GL_DEPTH_TEST);
-    float near_plane = 1.0f, far_plane = 65.0f;
+    float near_plane = 1.0f, far_plane = 85.0f;
 
-    lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
+    lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
     lightView = glm::lookAt(sunPos + mainCamera->Position, mainCamera->Position, glm::vec3(0.0, 1.0, 0.0));
     lightSpaceMatrix = lightProjection * lightView;
 
@@ -417,7 +417,7 @@ int main()
     glBindVertexArray(quadVAO);
     glActiveTexture(GL_TEXTURE0);
 
-    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glBindTexture(GL_TEXTURE_2D, fullscreenTexture);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     if (!input.jump)
@@ -452,11 +452,25 @@ int main()
 
 void DrawScene(bool sunCam, Shader *altShader)
 {
-  view = mainCamera->GetViewMatrix();
+
   projection = mainCamera->GetProjection();
   viewPos = mainCamera->Position;
   glm::mat4 invViewProj = glm::inverse(projection * view);
 
+  glDepthFunc(GL_LEQUAL);
+  skyboxShader->use();
+
+  view = glm::mat4(glm::mat3(view));
+
+  skyboxShader->setMat4("view", view);
+  skyboxShader->setMat4("projection", projection);
+
+  glBindVertexArray(skyboxVAO);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+  glDepthFunc(GL_LESS);
+
+  view = mainCamera->GetViewMatrix();
   if (sunCam)
   {
     projection = lightProjection;
@@ -487,19 +501,6 @@ void DrawScene(bool sunCam, Shader *altShader)
       m->Draw(&pair.first);
     }
   }
-
-  glDepthFunc(GL_LEQUAL);
-  skyboxShader->use();
-
-  view = glm::mat4(glm::mat3(view));
-
-  skyboxShader->setMat4("view", view);
-  skyboxShader->setMat4("projection", projection);
-
-  glBindVertexArray(skyboxVAO);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-  glDrawArrays(GL_TRIANGLES, 0, 36);
-  glDepthFunc(GL_LESS);
 }
 
 void DrawShadowScene(Shader *shader)

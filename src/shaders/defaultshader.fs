@@ -219,7 +219,7 @@ if(diffuseTexColor.a < 0.1f)
   {
     vec4 lightSpacePos = u_lightMatrix * vec4(rayPos, 1.0);
     float shadowCalc = ShadowCalculation(lightSpacePos);
-    accum += 1.0 - shadowCalc;
+    accum += 1.0 - shadowCalc + .03 * i * shadowCalc;
     rayPos += rayDir * rayStep;
   }
 
