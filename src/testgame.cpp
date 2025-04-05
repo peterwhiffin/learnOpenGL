@@ -364,7 +364,7 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
     float near_plane = 1.0f, far_plane = 85.0f;
-
+    //
     lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
     lightView = glm::lookAt(sunPos + mainCamera->Position, mainCamera->Position, glm::vec3(0.0, 1.0, 0.0));
     lightSpaceMatrix = lightProjection * lightView;
